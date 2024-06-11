@@ -32,8 +32,10 @@ public class UsmDemuxer
         InitializeMasks(key1, key2);
     }
 
-    public async Task Demux(Stream stream, string directoryPath = "")
+    public async Task<DemuxResult> Demux(Stream stream, string directoryPath = "")
     {
+        DemuxResult demuxResult = new();
+
         bool firstSector = true;
 
         byte? currentVideoChNo = null;
@@ -120,7 +122,11 @@ public class UsmDemuxer
                                 if (currentVideoFileStream is not null)
                                     await currentVideoFileStream.DisposeAsync();
 
-                                currentVideoFileStream = File.Open(_videoFilenames.Dequeue(), FileMode.Create, FileAccess.Write);
+                                string filename = _videoFilenames.Dequeue();
+
+                                demuxResult.VideoPaths.Add(filename);
+
+                                currentVideoFileStream = File.Open(filename, FileMode.Create, FileAccess.Write);
                             }
 
                             Debug.Assert(currentVideoFileStream is not null);
@@ -156,7 +162,11 @@ public class UsmDemuxer
                                 if (currentAudioFileStream is not null)
                                     await currentAudioFileStream.DisposeAsync();
 
-                                currentAudioFileStream = File.Open(_audioFilenames.Dequeue(), FileMode.Create, FileAccess.Write);
+                                string filename = _audioFilenames.Dequeue();
+
+                                demuxResult.AudioPaths.Add(filename);
+
+                                currentAudioFileStream = File.Open(filename, FileMode.Create, FileAccess.Write);
                             }
 
                             Debug.Assert(currentAudioFileStream is not null);
@@ -186,6 +196,8 @@ public class UsmDemuxer
 
         Debug.Assert(_videoFilenames.Count == 0);
         Debug.Assert(_audioFilenames.Count == 0);
+
+        return demuxResult;
     }
 
     private void InitializeMasks(uint key1, uint key2)
